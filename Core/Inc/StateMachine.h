@@ -1,0 +1,85 @@
+/*
+ * StateMachine.h
+ *
+ *  Created on: May 2, 2023
+ *      Author: harsha
+ */
+
+#ifndef INC_STATEMACHINE_H_
+#define INC_STATEMACHINE_H_
+
+#include "stdio.h"
+#include "CommonConstants.h"
+
+#define IDLE_SETUP 1
+#define IDLE_RUN 2
+
+
+#define RUN_RAMPUP 1
+#define RUN_ALL 2
+#define RUN_PAUSED	3
+#define RUN_STOPPED 4
+#define RUN_OVER 5
+
+#define TO_SETTINGS 1
+#define TO_DIAGNOSTICS 2
+#define TO_GB_CALIBRATION 3
+#define TO_IDLE_FROM_GB_CALIB 4
+#define TO_GB_CALIB_SAVE_LEFT 5
+#define TO_GB_CALIB_SAVE_RIGHT 6
+// Inside StateTypeDef struct, after alSettingsSent:
+
+typedef struct StateStruct
+{
+	char oneTime;
+	char current_state;
+	char prev_state;
+	char switchState;
+
+	char runMode;
+
+	char BT_dataOK;
+	char BT_Paired;
+
+	long oneSecTimer;
+	char BT_sendState;
+	char BT_pauseReason;
+	char BT_runInfoToSend;
+	uint8_t BT_runInfowhichMotor;
+	char BT_paired;
+	char BT_transmission_over;
+	char BT_send_GBcalibData;
+
+	char SMPS_OK_signal;
+	char SMPS_cntrl;
+	char SMPS_switchOff;
+
+	char AL_params_passed;
+	char AL_ack_received;
+
+	char LOG_enabled;
+	uint8_t sensorToggleState;    /* latest Toggle_Switch from BR motor */
+	uint8_t sensorToggleUpdated;  /* 1 = new value arrived, BT to send */
+	uint8_t alSettingsSent;
+	uint8_t alSettingsJustSaved;
+
+	uint8_t alCalibActive;       // 1 = collecting sensor samples
+	uint8_t alCalibResultReady;  // 1 = result ready to send to app
+	uint16_t alCalibAvg;         // computed average
+}StateTypeDef;
+
+extern StateTypeDef S;
+
+void DebugState(void);
+void RunState(void);
+void SetupState(void);
+void HomingState(void);
+void IdleState(void);
+void ErrorState(void);
+void GB_CalibrationState(void);
+void FinishState(void);
+
+void InitializeState_TypeDef(StateTypeDef *s);
+void ChangeState(StateTypeDef *s, uint8_t newState);
+
+#endif /* INC_STATEMACHINE_H_ */
