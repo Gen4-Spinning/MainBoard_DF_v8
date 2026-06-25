@@ -223,7 +223,33 @@ void FDCAN_Recieve_RunDataFromMotors(uint8_t motorID)
             R[motorID].motorTemp  = RxData[7];
             R[motorID].currentRaw = (RxData[8] << 8)  | RxData[9];
             R[motorID].voltageRaw = (RxData[10] << 8) | RxData[11];
-            R[motorID].currentA   = (float)R[motorID].currentRaw * MOTORBRD_CURRENT_GAIN;
+            if (motorID == BR) {
+                /* INA181 (REV4): bidirectional, subtract REF offset
+            	INA181 output formula:
+            	OUT_voltage = REF + (Gain × Vshunt)
+            	OUT_voltage = REF + (Gain × I × Rshunt)
+
+            	Rearranging for I:
+            	I = (OUT_voltage - REF) / (Gain × Rshunt)
+
+            	Substituting ADC back:
+            	OUT_voltage = ADC_count × (3.3 / 4095)
+            	            = ADC_count × 0.000806
+
+            	So:
+            	I = (ADC_count × 0.000806 - REF) / (Gain × Rshunt)
+            	I = (ADC_count × 0.000806 - 0.8188) / (20 × 0.006)
+            	I = (ADC_count × 0.000806 - 0.8188) / 0.12*/
+                R[motorID].currentA = fmaxf(0.0f,
+                	    ((float)R[motorID].currentRaw * 0.000806f - 0.8188f) / 0.12f + BR_CURRENT_OFFSET);
+            } else {
+                // INA180 (REV3): unidirectional, simple multiply
+            	/*I = (ADC_count × 0.000806 - 0) / (20 × 0.006)
+            	I = (ADC_count × 0.000806) / 0.12
+            	I = ADC_count × (0.000806 / 0.12)
+            	I = ADC_count × 0.006717 */
+                R[motorID].currentA = (float)R[motorID].currentRaw * MOTORBRD_CURRENT_GAIN;
+            }
             R[motorID].voltageV   = (float)R[motorID].voltageRaw * MOTORBRD_VOLTAGE_GAIN;
             R[motorID].power      = R[motorID].currentA * R[motorID].voltageV;
         }
